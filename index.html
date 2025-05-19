@@ -1,326 +1,377 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>تتبع النوم</title>
-<style>
-  body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 1em; }
-  h1 { text-align: center; color: #2c3e50; }
-  label { display: block; margin: 0.5em 0 0.2em; }
-  input[type=time], textarea, select { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; }
-  button { background: #3498db; color: white; border: none; padding: 0.7em 1.2em; margin: 0.5em 0; border-radius: 4px; cursor: pointer; }
-  button:hover { background: #2980b9; }
-  #sleepResult, #sleepAdvice { margin-top: 1em; font-weight: bold; }
-  #logTable { width: 100%; border-collapse: collapse; margin-top: 1em; }
-  #logTable th, #logTable td { border: 1px solid #ddd; padding: 0.5em; text-align: center; }
-  #logTable th { background: #2980b9; color: white; }
-  textarea { resize: vertical; }
-  .btn-group { margin-top: 1em; display: flex; gap: 0.5em; flex-wrap: wrap; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تتبع صحة النوم مع مراحل النوم</title>
+  <style>
+    body {
+      max-width: 700px;
+      margin: auto;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #00796b;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input[type="time"], textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
+      height: 100px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #00796b;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+      margin-right: 10px;
+    }
+    button:hover {
+      background-color: #004d40;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      direction: rtl;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      font-size: 14px;
+      text-align: center;
+    }
+    th {
+      background-color: #00796b;
+      color: white;
+    }
+    .actions {
+      margin-top: 15px;
+      text-align: right;
+    }
+    .result, .advice {
+      margin-top: 20px;
+      font-size: 18px;
+      text-align: right;
+      min-height: 30px;
+    }
+  </style>
 </head>
 <body>
 
-<h1>تتبع النوم</h1>
+  <h1>تتبع صحة النوم مع مراحل النوم</h1>
 
-<label for="sleepTime">وقت النوم:</label>
-<input type="time" id="sleepTime" />
+  <label for="sleepTime">وقت النوم:</label>
+  <input type="time" id="sleepTime" />
 
-<label for="wakeTime">وقت الاستيقاظ:</label>
-<input type="time" id="wakeTime" />
+  <label for="wakeTime">وقت الاستيقاظ:</label>
+  <input type="time" id="wakeTime" />
 
-<label for="dailyNotes">ملاحظات اليوم:</label>
-<textarea id="dailyNotes" rows="4" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+  <h3>مراحل النوم</h3>
 
-<div class="btn-group">
-  <button onclick="saveRecord()">حفظ البيانات</button>
-  <button onclick="calculateSleep()">احسب مدة النوم والنصائح</button>
-  <button onclick="exportNotes()">تصدير الملاحظات</button>
-  <button onclick="deleteTodayNotes()">حذف ملاحظات اليوم</button>
-  <button onclick="deleteAllNotes()">حذف جميع الملاحظات</button>
-</div>
+  <label>النوم الخفيف - بداية:</label>
+  <input type="time" id="lightSleepStart" />
+  <label>النوم الخفيف - نهاية:</label>
+  <input type="time" id="lightSleepEnd" />
 
-<div id="sleepResult"></div>
-<div id="sleepAdvice"></div>
+  <label>النوم العميق - بداية:</label>
+  <input type="time" id="deepSleepStart" />
+  <label>النوم العميق - نهاية:</label>
+  <input type="time" id="deepSleepEnd" />
 
-<label for="viewRange">عدد الأيام للعرض في السجل:</label>
-<select id="viewRange" onchange="renderLog()">
-  <option value="7">7 أيام</option>
-  <option value="14">14 يومًا</option>
-  <option value="30">30 يومًا</option>
-</select>
+  <label>حركة العين السريعة (REM) - بداية:</label>
+  <input type="time" id="remSleepStart" />
+  <label>حركة العين السريعة (REM) - نهاية:</label>
+  <input type="time" id="remSleepEnd" />
 
-<table id="logTable">
-  <thead>
-    <tr>
-      <th>التاريخ</th>
-      <th>وقت النوم</th>
-      <th>وقت الاستيقاظ</th>
-      <th>ساعات النوم</th>
-      <th>ملاحظات</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <label for="dailyNotes">ملاحظات اليوم:</label>
+  <textarea id="dailyNotes" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+
+  <div class="actions">
+    <button onclick="saveTodayRecord()">حفظ بيانات اليوم</button>
+    <button onclick="calculateSleep()">احسب ساعات النوم</button>
+    <button onclick="exportNotes()">تصدير الملاحظات</button>
+    <button onclick="deleteTodayNotes()">حذف ملاحظات اليوم</button>
+    <button onclick="deleteAllNotes()">حذف كل الملاحظات</button>
+  </div>
+
+  <div class="result" id="sleepResult"></div>
+  <div class="advice" id="sleepAdvice"></div>
+
+  <label for="viewRange">عرض سجلات آخر:</label>
+  <select id="viewRange" onchange="renderLog()">
+    <option value="7">7 أيام</option>
+    <option value="30">30 يوم</option>
+  </select>
+
+  <table id="logTable">
+    <thead>
+      <tr>
+        <th>التاريخ</th>
+        <th>وقت النوم</th>
+        <th>وقت الاستيقاظ</th>
+        <th>ساعات النوم</th>
+        <th>النوم الخفيف</th>
+        <th>النوم العميق</th>
+        <th>REM</th>
+        <th>ملاحظات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
 <script>
-  const DB_NAME = 'SleepTrackerDB';
-  const STORE_NAME = 'sleepRecords';
+  // فتح قاعدة بيانات IndexedDB
   let db;
+  const DB_NAME = 'SleepDB';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'records';
 
-  // فتح أو إنشاء قاعدة بيانات IndexedDB
   function openDB() {
     return new Promise((resolve, reject) => {
-      if (db) return resolve(db);
-      const request = indexedDB.open(DB_NAME, 1);
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         db = request.result;
         resolve(db);
       };
-      request.onupgradeneeded = (event) => {
-        db = event.target.result;
+      request.onupgradeneeded = (e) => {
+        db = e.target.result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: 'date' });
-          store.createIndex('date', 'date', { unique: true });
+          db.createObjectStore(STORE_NAME, { keyPath: 'date' });
         }
       };
     });
   }
 
-  // حفظ السجل اليومي
-  async function saveRecord() {
+  // تحويل وقت hh:mm إلى دقائق من منتصف الليل
+  function timeToMinutes(timeStr) {
+    if (!timeStr) return null;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  // حساب فرق الوقت بالساعات مع دعم تجاوز منتصف الليل
+  function diffHours(startStr, endStr) {
+    let start = timeToMinutes(startStr);
+    let end = timeToMinutes(endStr);
+    if (start === null || end === null) return 0;
+    if (end < start) end += 24 * 60;
+    return (end - start) / 60;
+  }
+
+  // حفظ سجل اليوم
+  async function saveTodayRecord() {
+    if (!db) await openDB();
+
     const sleepTime = document.getElementById('sleepTime').value;
     const wakeTime = document.getElementById('wakeTime').value;
     const notes = document.getElementById('dailyNotes').value.trim();
+
+    // مراحل النوم
+    const lightSleepStart = document.getElementById('lightSleepStart').value;
+    const lightSleepEnd = document.getElementById('lightSleepEnd').value;
+    const deepSleepStart = document.getElementById('deepSleepStart').value;
+    const deepSleepEnd = document.getElementById('deepSleepEnd').value;
+    const remSleepStart = document.getElementById('remSleepStart').value;
+    const remSleepEnd = document.getElementById('remSleepEnd').value;
+
     if (!sleepTime || !wakeTime) {
-      alert('يرجى إدخال وقت النوم ووقت الاستيقاظ.');
+      alert('يرجى إدخال وقت النوم ووقت الاستيقاظ');
       return;
     }
-    const today = new Date().toISOString().slice(0, 10);
-    const [sleepH, sleepM] = sleepTime.split(':').map(Number);
-    const [wakeH, wakeM] = wakeTime.split(':').map(Number);
-    let sleepDT = new Date();
-    sleepDT.setHours(sleepH, sleepM, 0, 0);
-    let wakeDT = new Date();
-    wakeDT.setHours(wakeH, wakeM, 0, 0);
-    if (wakeDT <= sleepDT) wakeDT.setDate(wakeDT.getDate() + 1);
-    const diffMs = wakeDT - sleepDT;
-    const hours = diffMs / (1000 * 60 * 60);
 
-    await openDB();
+    const today = new Date().toISOString().slice(0, 10);
+
+    const totalSleep = diffHours(sleepTime, wakeTime);
+
+    const record = {
+      date: today,
+      sleepTime,
+      wakeTime,
+      totalSleep: totalSleep.toFixed(2),
+      lightSleep: lightSleepStart && lightSleepEnd ? `${lightSleepStart} - ${lightSleepEnd}` : '',
+      deepSleep: deepSleepStart && deepSleepEnd ? `${deepSleepStart} - ${deepSleepEnd}` : '',
+      remSleep: remSleepStart && remSleepEnd ? `${remSleepStart} - ${remSleepEnd}` : '',
+      notes
+    };
+
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-    const record = { date: today, sleepTime, wakeTime, notes, hours: hours.toFixed(2) };
     store.put(record);
+
     tx.oncomplete = () => {
-      alert('تم حفظ البيانات.');
-      calculateSleep();
+      alert('تم حفظ بيانات اليوم');
       renderLog();
     };
-    tx.onerror = () => alert('حدث خطأ أثناء حفظ البيانات.');
+    tx.onerror = () => alert('حدث خطأ أثناء الحفظ');
   }
 
-  // تحميل السجل لليوم الحالي
-  async function loadTodayRecord() {
-    const today = new Date().toISOString().slice(0, 10);
-    await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const req = store.get(today);
-      req.onsuccess = () => {
-        if (req.result) {
-          document.getElementById('sleepTime').value = req.result.sleepTime;
-          document.getElementById('wakeTime').value = req.result.wakeTime;
-          document.getElementById('dailyNotes').value = req.result.notes;
-        }
-        resolve(req.result);
-      };
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  // حساب مدة النوم وعرض النصائح
+  // حساب ساعات النوم وعرض نصيحة مبسطة
   function calculateSleep() {
     const sleepTime = document.getElementById('sleepTime').value;
     const wakeTime = document.getElementById('wakeTime').value;
-    const resultDiv = document.getElementById('sleepResult');
-    const adviceDiv = document.getElementById('sleepAdvice');
 
     if (!sleepTime || !wakeTime) {
-      resultDiv.textContent = 'يرجى إدخال وقت النوم ووقت الاستيقاظ';
-      adviceDiv.textContent = '';
+      alert('يرجى إدخال وقت النوم ووقت الاستيقاظ');
       return;
     }
 
-    const [sleepH, sleepM] = sleepTime.split(':').map(Number);
-    const [wakeH, wakeM] = wakeTime.split(':').map(Number);
-
-    let sleepDT = new Date();
-    sleepDT.setHours(sleepH, sleepM, 0, 0);
-    let wakeDT = new Date();
-    wakeDT.setHours(wakeH, wakeM, 0, 0);
-    if (wakeDT <= sleepDT) wakeDT.setDate(wakeDT.getDate() + 1);
-
-    const diffMs = wakeDT - sleepDT;
-    const totalHours = diffMs / (1000 * 60 * 60);
-
-    resultDiv.textContent = `مدة النوم: ${totalHours.toFixed(2)} ساعة`;
+    const totalHours = diffHours(sleepTime, wakeTime);
+    document.getElementById('sleepResult').textContent = `عدد ساعات النوم: ${totalHours.toFixed(2)} ساعة`;
 
     let advice = '';
-    if (totalHours < 4) {
-      advice = 'نصيحة: نوم قليل جداً، حاول النوم لفترة أطول لتحسين صحتك.';
-    } else if (totalHours < 6) {
-      advice = 'نصيحة: النوم أقل من الموصى به، حاول زيادة عدد ساعات النوم.';
-    } else if (totalHours < 8) {
-      advice = 'نصيحة: نوم جيد، حافظ عليه.';
-    } else if (totalHours <= 10) {
-      advice = 'نصيحة: نوم مريح ومناسب.';
-    } else {
-      advice = 'نصيحة: قد يكون النوم مفرطاً، تأكد من جودة النوم.';
-    }
-    adviceDiv.textContent = advice;
+    if (totalHours < 6) advice = 'نوم قليل جداً، حاول تحسين وقت نومك.';
+    else if (totalHours < 7.5) advice = 'النوم متوسط، حاول الوصول لـ 7-8 ساعات.';
+    else if (totalHours <= 9) advice = 'نوم جيد وصحي.';
+    else advice = 'ربما تنام أكثر من اللازم.';
 
-    if (Notification.permission === 'granted') {
-      new Notification('تتبع النوم', {
-        body: `مدة نومك اليوم: ${totalHours.toFixed(2)} ساعة`
-      });
-    }
+    document.getElementById('sleepAdvice').textContent = advice;
   }
 
-  // عرض السجل في الجدول
+  // عرض السجلات حسب اختيار الفترة
   async function renderLog() {
-    const daysToShow = parseInt(document.getElementById('viewRange').value, 10);
+    if (!db) await openDB();
+
+    const days = Number(document.getElementById('viewRange').value);
     const tbody = document.querySelector('#logTable tbody');
     tbody.innerHTML = '';
 
-    await openDB();
-
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
 
-    const records = [];
+    request.onsuccess = () => {
+      let records = request.result;
+      // فلترة حسب الأيام
+      const today = new Date();
+      const cutoff = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
 
-    store.openCursor(null, 'prev').onsuccess = function(event) {
-      const cursor = event.target.result;
-      if (cursor && records.length < daysToShow) {
-        records.push(cursor.value);
-        cursor.continue();
-      } else {
-        records.forEach(rec => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${rec.date}</td>
-            <td>${rec.sleepTime}</td>
-            <td>${rec.wakeTime}</td>
-            <td>${rec.hours}</td>
-            <td>${escapeHTML(rec.notes || '')}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-    };
-  }
+      records = records.filter(r => new Date(r.date) >= cutoff);
+      // ترتيب تنازلي (الأحدث أولاً)
+      records.sort((a,b) => b.date.localeCompare(a.date));
 
-  // تصدير الملاحظات كملف نصي
-  async function exportNotes() {
-    await openDB();
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const allNotes = [];
-
-    store.openCursor().onsuccess = function(event) {
-      const cursor = event.target.result;
-      if (cursor) {
-        allNotes.push(`التاريخ: ${cursor.value.date}
-ملاحظات:
-${cursor.value.notes || ''}
------------------
-`);
-        cursor.continue();
-      } else {
-        const blob = new Blob([allNotes.join('
-')], {type: 'text/plain;charset=utf-8'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'sleep_notes.txt';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-    };
-  }
-
-  // حذف ملاحظات اليوم
-  async function deleteTodayNotes() {
-    const today = new Date().toISOString().slice(0, 10);
-    await openDB();
-
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const getReq = store.get(today);
-
-    getReq.onsuccess = () => {
-      if (!getReq.result) {
-        alert('لا توجد ملاحظات لليوم لحذفها.');
+      if(records.length === 0){
+        tbody.innerHTML = `<tr><td colspan="8">لا توجد سجلات في هذه الفترة</td></tr>`;
         return;
       }
-      const updatedRecord = {...getReq.result, notes: ''};
-      const putReq = store.put(updatedRecord);
-      putReq.onsuccess = () => {
-        alert('تم حذف ملاحظات اليوم.');
-        document.getElementById('dailyNotes').value = '';
-        renderLog();
-      };
-      putReq.onerror = () => alert('حدث خطأ أثناء الحذف.');
-    };
-    getReq.onerror = () => alert('حدث خطأ أثناء الوصول إلى البيانات.');
-  }
 
-  // حذف جميع الملاحظات (لا تؤثر على أوقات النوم)
-  async function deleteAllNotes() {
-    if (!confirm('هل أنت متأكد من حذف جميع الملاحظات؟ هذا لا يؤثر على أوقات النوم فقط الملاحظات.')) return;
-    await openDB();
-
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-
-    store.openCursor().onsuccess = function(event) {
-      const cursor = event.target.result;
-      if (cursor) {
-        const record = cursor.value;
-        if (record.notes && record.notes.length > 0) {
-          const updated = {...record, notes: ''};
-          store.put(updated);
-        }
-        cursor.continue();
-      } else {
-        alert('تم حذف جميع الملاحظات.');
-        document.getElementById('dailyNotes').value = '';
-        renderLog();
+      for (const r of records) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.date}</td>
+          <td>${r.sleepTime}</td>
+          <td>${r.wakeTime}</td>
+          <td>${r.totalSleep}</td>
+          <td>${r.lightSleep || '-'}</td>
+          <td>${r.deepSleep || '-'}</td>
+          <td>${r.remSleep || '-'}</td>
+          <td>${r.notes || '-'}</td>
+        `;
+        tbody.appendChild(tr);
       }
     };
   }
 
-  // هروب النص لمنع حقن HTML
-  function escapeHTML(text) {
-    if (!text) return '';
-    return text.replace(/[&<>"']/g, function(m) {
-      return {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      }[m];
-    });
+  // تصدير الملاحظات كلها كنص
+  async function exportNotes() {
+    if (!db) await openDB();
+
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const records = request.result;
+      let allNotes = '';
+
+      for (const r of records) {
+        if (r.notes && r.notes.trim() !== '') {
+          allNotes += `التاريخ: ${r.date}\nالملاحظات:\n${r.notes}\n\n`;
+        }
+      }
+
+      if(allNotes === '') allNotes = 'لا توجد ملاحظات محفوظة.';
+
+      // فتح نافذة جديدة لعرض النص (يمكن نسخه)
+      const win = window.open('', '_blank');
+      win.document.write(`<pre>${allNotes}</pre>`);
+      win.document.close();
+    };
   }
 
-  // تحميل البيانات عند بدء الصفحة
+  // حذف ملاحظات اليوم (وإبقاء البيانات الأخرى)
+  async function deleteTodayNotes() {
+    if (!db) await openDB();
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(today);
+
+    request.onsuccess = () => {
+      const record = request.result;
+      if (!record) {
+        alert('لا يوجد سجل لليوم لحذف الملاحظات');
+        return;
+      }
+      record.notes = '';
+      store.put(record);
+
+      tx.oncomplete = () => {
+        alert('تم حذف ملاحظات اليوم');
+        renderLog();
+      };
+    };
+  }
+
+  // حذف كل الملاحظات مع الاحتفاظ بالسجلات (يحذف فقط الحقول الملاحظات)
+  async function deleteAllNotes() {
+    if (!db) await openDB();
+
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const records = request.result;
+      for (const rec of records) {
+        rec.notes = '';
+        store.put(rec);
+      }
+      tx.oncomplete = () => {
+        alert('تم حذف كل الملاحظات');
+        renderLog();
+      };
+    };
+  }
+
+  // عند تحميل الصفحة، فتح DB وعرض السجلات
   window.onload = async () => {
-    await loadTodayRecord();
-    calculateSleep();
+    await openDB();
     renderLog();
   };
 </script>
