@@ -1,0 +1,17 @@
+{
+  "name": "جدول النوم",
+  "short_name": "نوم",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#00796b",
+  "theme_color": "#00796b",
+  "description": "تطبيق جدولة النوم مع ملاحظات وتذكير بعدم التدخين",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/833/833472.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "lang": "ar"
+}
